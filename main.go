@@ -90,10 +90,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the TUI on each update
 func (m model) View() string {
 	if m.showStats {
-		return fmt.Sprintf("=== Critter Stats ===\n\nHealth: %d/%d\nStrength: %d\nSpeed: %d\n\nPress 'TAB' to return.", m.denver.Health, m.denver.MaxHealth, m.denver.Strength, m.denver.Speed)
+		// RPG-style character stats view
+		return fmt.Sprintf(`
+  ========================================
+                %s Stats
+  ========================================
+  Name:        %s
+  Position:    %s
+  ----------------------------------------
+  Health:      %d / %d
+  Strength:    %d
+  Speed:       %d
+  ========================================
+
+  Press 'TAB' to return to the main view.
+`, m.denver.Name, m.denver.Name, m.denver.Position, m.denver.Health, m.denver.MaxHealth, m.denver.Strength, m.denver.Speed)
 	}
 
-	return fmt.Sprintf("Denver: %s\nPosition %s\n\nUse a,w,s,d or arrows to move around\nPress TAB to show Denver stats\nPress q to quit.", m.denver.Name, m.denver.Position)
+	// Main game view with position and instructions
+	return fmt.Sprintf(`
+  ========================================
+               Welcome, %s!
+  ========================================
+  Position:    %s
+  ----------------------------------------
+  Use WASD or arrow keys to move around.
+  Press TAB to view stats.
+  Press Q to quit.
+`, m.denver.Name, m.denver.Position)
 }
 
 func main() {
