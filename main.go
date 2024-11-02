@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -87,37 +89,86 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the TUI on each update
-func (m model) View() string {
-	if m.showStats {
-		// RPG-style character stats view
-		return fmt.Sprintf(`
-  ========================================
-                %s Stats
-  ========================================
-  Name:        %s
-  Position:    %s
-  ----------------------------------------
-  Health:      %d / %d
-  Strength:    %d
-  Speed:       %d
-  ========================================
+func getMaxRight(s string) int {
+	max := 0
+	scanner := bufio.NewScanner(strings.NewReader(s))
+	for scanner.Scan() {
+		l := len(scanner.Text())
+		if l > max {
+			max = l
+		}
+	}
+	return max
+}
 
-  Press 'TAB' to return to the main view.
-`, m.denver.Name, m.denver.Name, m.denver.Position, m.denver.Health, m.denver.MaxHealth, m.denver.Strength, m.denver.Speed)
+func padWithSpaces(index int, s string) string {
+	if len(s) >= index {
+		return s
+	}
+	padding := strings.Repeat(" ", index-len(s))
+	return fmt.Sprintf("%s%s", s, padding)
+}
+
+func addToRight(base, addon string) string {
+	maxRight := getMaxRight(base)
+	space := 4
+	minStartindIndex := maxRight + space
+
+	baseScanner := bufio.NewScanner(strings.NewReader(base))
+	addonScanner := bufio.NewScanner(strings.NewReader(addon))
+	finalString := ""
+
+	for baseScanner.Scan() {
+		currentLine := baseScanner.Text()
+		if addonScanner.Scan() {
+			currentLine = padWithSpaces(minStartindIndex, currentLine)
+			currentLine += addonScanner.Text()
+		}
+
+		finalString += fmt.Sprintf("%s\n", currentLine)
 	}
 
-	// Main game view with position and instructions
-	return fmt.Sprintf(`
+	for addonScanner.Scan() {
+		currentLine := padWithSpaces(minStartindIndex, "")
+		currentLine += addonScanner.Text()
+		finalString += fmt.Sprintf("%s\n", currentLine)
+	}
+
+	return finalString
+}
+
+// View renders the TUI on each update
+func (m model) View() string {
+	header := fmt.Sprintf(`
   ========================================
-               Welcome, %s!
-  ========================================
+              Welcome, %s!
+  ========================================`, m.denver.Name)
+
+	mainView := fmt.Sprintf(`
   Position:    %s
   ----------------------------------------
   Use WASD or arrow keys to move around.
   Press TAB to view stats.
   Press Q to quit.
-`, m.denver.Name, m.denver.Position)
+`, m.denver.Position)
+
+	statsView := fmt.Sprintf(`
+  ┌──────────────────────┐
+  │    Denver Stats      │
+  ├──────────────────────┤
+  │ Health:    %d/%d     │
+  │ Strength:  %d        │
+  │ Speed:     %d        │
+  └──────────────────────┘
+`, m.denver.Health, m.denver.MaxHealth, m.denver.Strength, m.denver.Speed)
+
+	finalView := mainView
+	if m.showStats {
+		finalView = addToRight(mainView, statsView)
+	}
+
+	// Return the main view with the stats box on the right
+	return fmt.Sprintf("%s\n%s", header, finalView)
 }
 
 func main() {
